@@ -52,7 +52,35 @@ class CalcController{
 
 			this.addOpperation(this.mapRegularOpperator(value));
 
+		} else if (this.isSingleArgOpperator(value)){
+
+			this.singleArgOpperation(value);
+
+		} else switch(value){
+
+			case 'clear':
+				this.resetCalculations();
+				break;
+			case 'clear-element':
+				this.popLastOpperation();
+				break;
+			case 'backspace':
+				let previous = this.getLastOpperation();
+				let start = -1*previous.length;
+				let result = previous.slice(start,-1);
+				this.setLastOpperation(result);
+				break;
+			case '.':
+				this.addDot();
+				break;
+			case 'equal':
+				this.equals();
+				break;
+
+
 		}
+
+		this.setLastNumberToDisplay();
 
 	}
 
@@ -62,7 +90,7 @@ class CalcController{
 
 		if(isNaN(previous)){
 
-			this._calcList.push(value);
+			this.calcList.push(value);
 
 		} else if(previous === '0'||previous === 0){
 
@@ -74,7 +102,6 @@ class CalcController{
 			this.setLastOpperation(newValue);
 
 		}
-		this.setLastNumberToDisplay();
 
 	}
 
@@ -92,15 +119,108 @@ class CalcController{
 
 		}
 
-		this.setLastNumberToDisplay();
+	}
+
+	singleArgOpperation(value){
+
+		let previous = this.getLastOpperation();
+		let result = 0;
+
+		if(!isNaN(previous) || previous != 0){
+
+			switch(value){
+
+				case 'percent':
+					result = previous/100.0;
+					break;
+				case 'root':
+					result = Math.sqrt(previous);
+					break;
+				case 'square':
+					result = previous*previous;
+					break;
+				case 'invert':
+					result = 1.0/previous;
+					break;
+				case 'negate':
+					result = previous*(-1);
+					break;
+
+			}
+
+			this.setLastOpperation(result);
+
+		}
 
 	}
 
+	addDot(){
+
+		let previous = this.getLastOpperation();
+
+		if(!isNaN(previous) && !previous.includes('.')){
+
+			let newValue = previous + '.';
+			this.setLastOpperation(newValue);
+
+		}
+
+	}
+
+	equals(){
+
+		let lst = this.calcList;
+		let i = 0;
+
+		while(lst.length >= 3){
+
+			console.log(lst);
+
+			this.calculate();
+
+			lst = this.calcList;
+
+			i++;
+			if(i > 10) {break;}
+
+		}
+
+	}
+
+	calculate(){
+
+		let val1 = parseFloat(this.shiftFirstOpperation());
+		let op = this.shiftFirstOpperation();
+		let val2 = parseFloat(this.getFirstOpperation());
+		let result = 0;
+
+		switch(op){
+
+			case '+':
+				result = val1 + val2;
+				break;
+			case '-':
+				result = val1 - val2;
+				break;
+			case '*':
+				result = val1 * val2;
+				break;
+			case '/':
+				result = val1 / val2;
+				break;
+
+		}
+
+		this.setFirstOpperation(result.toString());
+
+	}
+
+
 	setLastNumberToDisplay(){
 
-		let lastNumber = 0;
+		let lastNumber = '';//this.calcList;
 
-		if(!isNaN(this.getLastOpperation())){
+		/*if(!isNaN(this.getLastOpperation())){
 
 			lastNumber = this.getLastOpperation();
 
@@ -108,7 +228,15 @@ class CalcController{
 
 					lastNumber = this._calcList[this._calcList.length-2];
 
-					}
+					}*/
+
+		//Setting the whole thing to the display since the calculation as a whole is not currently visible
+
+		for(let i = 0; i < this.calcList.length; i++){
+
+			lastNumber += this.calcList[i];
+
+		}
 
 		this.calcDisplay = lastNumber;
 
@@ -116,27 +244,64 @@ class CalcController{
 
 
 //Auxiliary functions
+	resetCalculations(){
+
+		this.calcList = ['0'];
+
+	}
+
 	getLastOpperation(){
 
-		return this._calcList[this._calcList.length-1];
+		return this.calcList[this.calcList.length-1];
 
 	}
 
 	setLastOpperation(value){
 
-		this._calcList[this._calcList.length-1] = value;
+		this.calcList[this.calcList.length-1] = value;
+
+	}
+
+	setFirstOpperation(value){
+
+		this.calcList[0] = value;
+
+	}
+
+	getFirstOpperation(){
+
+		return this.calcList[0];
 
 	}
 
 	pushOpperation(value){
 
-		this._calcList.push(value);
+		this.calcList.push(value);
 
-		/*if(this._calcList.length > 3){
+	}
 
-			this.calc();*/
+	popLastOpperation(){
 
-		//}
+		this.calcList.pop();
+		if (this.calcList.length == 0){
+
+			this.calcList = ['0'];
+
+		}
+
+	}
+
+	shiftFirstOpperation(){
+
+		let result = this.calcList.shift();;
+
+		/*if (this.calcList.length == 0){
+
+			this.calcList = ['0'];
+
+		} */
+
+		return result;
 
 	}
 
@@ -146,6 +311,14 @@ class CalcController{
 
 	set calcDisplay(value){
 		this._calcDisplayEl.innerHTML = value;
+	}
+
+	get calcList(){
+			return this._calcList;
+		}
+
+	set calcList(value){
+		this._calcList = value;
 	}
 
 	addEventListenerAll(element, events, fn){
@@ -177,6 +350,12 @@ class CalcController{
 				return '/';
 
 		}
+
+	}
+
+	isSingleArgOpperator(value){
+
+		return (['percent','root','square','invert','negate'].indexOf(value) > -1);
 
 	}
 
